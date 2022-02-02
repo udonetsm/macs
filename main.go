@@ -24,9 +24,16 @@ func errors(err error, code int) {
 	}
 }
 
+/* Creates new file even if it exists */
+func create(filename string) {
+	file, err := os.Create(filename)
+	errors(err, 12)
+	defer file.Close()
+}
+
 /* Writting data in target file */
 func writeInFile(filename string, data string) {
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0777)
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0777)
 	errors(err, 2)
 	defer file.Close()
 	_, err = file.WriteString(data)
@@ -37,6 +44,7 @@ func writeInFile(filename string, data string) {
 func Macs(cmd *cobra.Command, arg []string) {
 	log.Println("Scanning...")
 	ticker := time.NewTicker(1 * time.Second)
+	create("macs.txt") //it necessary for rewrite file always
 	go func() {
 		for _ = range ticker.C {
 			macs, err := wifiscan.Scan(wifiinterface)
