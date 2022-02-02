@@ -9,12 +9,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+/* For parse flag */
 var wifiinterface string
 
 func main() {
 	parse_flags()
 }
 
+/* Capture errors */
 func errors(err error, code int) {
 	if err != nil {
 		log.Println(err)
@@ -22,6 +24,7 @@ func errors(err error, code int) {
 	}
 }
 
+/* Writting data in target file */
 func writeInFile(filename string, data string) {
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0777)
 	errors(err, 2)
@@ -30,6 +33,7 @@ func writeInFile(filename string, data string) {
 	errors(err, 3)
 }
 
+/* Makes scanning within a minute and write macs in macs.txt for analizing */
 func Macs(cmd *cobra.Command, arg []string) {
 	log.Println("Scanning...")
 	ticker := time.NewTicker(1 * time.Second)
@@ -47,6 +51,7 @@ func Macs(cmd *cobra.Command, arg []string) {
 	log.Println("Scanning finished, check macs.txt")
 }
 
+/* Get network interface name as flag and show help message if it's not exist */
 func parse_flags() {
 	rootCmd := &cobra.Command{
 		Use:     "macs",
