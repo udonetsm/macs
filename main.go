@@ -2,8 +2,6 @@ package main
 
 import (
 	"bufio"
-	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,7 +10,6 @@ import (
 	"github.com/schollz/wifiscan"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -124,12 +121,9 @@ func connect() error {
 	return err
 }
 
-func ParseFile(filename string) {
-	text, err := ioutil.ReadFile(filename)
-	capture_err(err, 3000)
-	scanner := bufio.NewScanner(strings.NewReader(string(text)))
+func ParseStringToYamlFormat(text string) string {
+	scanner := bufio.NewScanner(strings.NewReader(text))
 	var fs []string
-	result := Text{}
 	str, key, value := "", "", ""
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -150,7 +144,5 @@ func ParseFile(filename string) {
 			key, value = "", ""
 		}
 	}
-	err = yaml.Unmarshal([]byte(str), &result)
-	capture_err(err, 3002)
-	log.Println(result.Param9OpaNki, result.Param10)
+	return str
 }
