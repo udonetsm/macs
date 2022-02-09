@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -10,6 +12,7 @@ import (
 	"github.com/schollz/wifiscan"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -119,4 +122,35 @@ func connect() error {
 	connect := exec.Command("netsh", "wlan", "connect", profileName[4])
 	err = connect.Run()
 	return err
+}
+
+func ParseFile(filename string) {
+	text, err := ioutil.ReadFile(filename)
+	capture_err(err, 3000)
+	scanner := bufio.NewScanner(strings.NewReader(string(text)))
+	var fs []string
+	result := Text{}
+	str, key, value := "", "", ""
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, ":") {
+			fs = strings.Fields(line)
+			lenfs := len(fs)
+			for i := 0; i < lenfs; i++ {
+				if fs[i] == ":" {
+					for k := 0; k < i+1; k++ {
+						key += fs[k]
+					}
+					for v := i + 1; v < lenfs; v++ {
+						value += fs[v] + " "
+					}
+				}
+			}
+			str += "\n" + key + ` "` + strings.TrimSpace(value) + `"`
+			key, value = "", ""
+		}
+	}
+	err = yaml.Unmarshal([]byte(str), &result)
+	capture_err(err, 3002)
+	log.Println(result.Param9OpaNki, result.Param10)
 }
