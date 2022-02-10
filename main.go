@@ -94,7 +94,7 @@ func parse_flags() {
 		Use:     "macs",
 		Version: "1.0",
 		Example: `   macs.exe -a "Ленина 5" -t 60`,
-		Run:     Macs
+		Run:     Macs,
 	}
 	rootCmd.Flags().StringVarP(&wifiinterface, "iface", "i", "", "set outgoing interface")
 	rootCmd.Flags().StringVarP(&address, "addr", "a", "", "set address")
