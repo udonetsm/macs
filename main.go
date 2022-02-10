@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -121,28 +122,42 @@ func connect() error {
 	return err
 }
 
-func ParseStringToYamlFormat(text string) string {
-	scanner := bufio.NewScanner(strings.NewReader(text))
-	var fs []string
-	str, key, value := "", "", ""
+/*Parses strings with ":" to yaml format
+Read words before ":" and includes it as key
+and
+Read words after ":" and includes it as value*/
+func ParseStringToYamlFormat(text []byte) []byte {
+	scanner := bufio.NewScanner(strings.NewReader(string(text)))
+	var fields []string
+	var yaml_format, key, value string
 	for scanner.Scan() {
 		line := scanner.Text()
+		if len(line) == 0 {
+			continue
+		}
 		if strings.Contains(line, ":") {
-			fs = strings.Fields(line)
-			lenfs := len(fs)
-			for i := 0; i < lenfs; i++ {
-				if fs[i] == ":" {
-					for k := 0; k < i+1; k++ {
-						key += fs[k]
+			fields = strings.Fields(line)
+			lenfields := len(fields)
+			for field_indx := 0; field_indx < lenfields; field_indx++ {
+				if fields[field_indx] == ":" {
+					for key_indx := 0; key_indx < field_indx+1; key_indx++ {
+						key += fields[key_indx]
 					}
-					for v := i + 1; v < lenfs; v++ {
-						value += fs[v] + " "
+					for val_indx := field_indx + 1; val_indx < lenfields; val_indx++ {
+						value += fields[val_indx] + " "
 					}
 				}
 			}
-			str += "\n" + key + ` "` + strings.TrimSpace(value) + `"`
+		}
+		if len(key) > 1 || len(value) > 1 {
+			yaml_format += key + ` "` + strings.TrimSpace(value) + `"` + "\n"
 			key, value = "", ""
+		} else {
+			defer func() {
+				fmt.Printf("Several strings skipped. It seems like empty. %s %s", key, value)
+				fmt.Println()
+			}()
 		}
 	}
-	return str
+	return []byte(yaml_format)
 }
