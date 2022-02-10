@@ -120,29 +120,3 @@ func connect() error {
 	err = connect.Run()
 	return err
 }
-
-func ParseStringToYamlFormat(text string) string {
-	scanner := bufio.NewScanner(strings.NewReader(text))
-	var fs []string
-	str, key, value := "", "", ""
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, ":") {
-			fs = strings.Fields(line)
-			lenfs := len(fs)
-			for i := 0; i < lenfs; i++ {
-				if fs[i] == ":" {
-					for k := 0; k < i+1; k++ {
-						key += fs[k]
-					}
-					for v := i + 1; v < lenfs; v++ {
-						value += fs[v] + " "
-					}
-				}
-			}
-			str += "\n" + key + ` "` + strings.TrimSpace(value) + `"`
-			key, value = "", ""
-		}
-	}
-	return str
-}
