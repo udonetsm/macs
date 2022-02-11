@@ -51,7 +51,6 @@ func err_parse_flags(err error, code int, args ...interface{}) {
 
 func err_chmod(err error, code int, args ...interface{}) {
 	logrus.Error("Sumthing wrong while chmod\n", err, code, args)
-	os.Exit(code)
 }
 
 /* Writting data in target file */
@@ -67,25 +66,26 @@ func writeInFile(filename string, data string) {
 func Macs(cmd *cobra.Command, arg []string) {
 	logrus.Info("Scanning...")
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	var count, countmacs int
+	var count int
+	var strmacs string
 	go func() {
 		for sec := range ticker.C {
-			countmacs = 0
 			macs, err := wifiscan.Scan(wifiinterface)
 			errors(err, ERR_WIFI_SCAN, err_wifi_scan)
 			for _, mac := range macs {
-				writeInFile(address+".txt", mac.SSID+"\n")
 				count++
-				countmacs++
+				strmacs += mac.SSID + "\n"
 			}
-			fmt.Printf("Scanned %v macs in %v:%v:%v\n", countmacs, sec.Hour(), sec.Minute(), sec.Second())
+			writeInFile(address+".txt", strmacs+"\n")
+			fmt.Printf("Scanned %v macs in %v:%v:%v\n", len(macs), sec.Hour(), sec.Minute(), sec.Second())
+			strmacs = ""
 		}
 	}()
 	time.Sleep(time.Duration(scanningtime) * time.Second)
 	ticker.Stop()
+	fmt.Printf("Wrote %v strings in %s.txt\n", count, address)
 	err := os.Chmod(address+".txt", 0777)
 	errors(err, ERR_CHMOD, err_chmod)
-	fmt.Printf("Wrote %v strings in %s.txt\n", count, address)
 	wifiinterface, address = "", ""
 	count, scanningtime, interval = 0, 0, 0
 }
