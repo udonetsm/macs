@@ -76,8 +76,10 @@ func Macs(cmd *cobra.Command, arg []string) {
 				count++
 				strmacs += mac.SSID + "\n"
 			}
+			scanningtime -= interval
 			writeInFile(address+".txt", strmacs+"\n")
-			fmt.Printf("Scanned %v macs in %v:%v:%v\n", len(macs), sec.Hour(), sec.Minute(), sec.Second())
+			fmt.Printf("Scanned %v macs in %v:%v:%v. %v second left.\n",
+				len(macs), sec.Hour(), sec.Minute(), sec.Second(), scanningtime)
 			strmacs = ""
 		}
 	}()
