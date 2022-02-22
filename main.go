@@ -21,7 +21,7 @@ const (
 /* For parse flag */
 var (
 	wifiinterface, address string
-	scanningtime, interval int
+	scanningtime, interval int64
 )
 
 func errors(err error, code int, fn func(err error, code int, args ...interface{})) {
@@ -64,11 +64,13 @@ func writeInFile(filename string, data string) {
 
 /* Makes scanning within a minute and write macs in macs.txt for analizing */
 func Macs(cmd *cobra.Command, arg []string) {
-	logrus.Info("Scanning...")
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	start := time.Now().Unix()
 	var count int
+	var now int64
 	var strmacs string
 	go func() {
+		fmt.Printf("Passed\t | \tScanned\t | \tLeft\n")
 		for sec := range ticker.C {
 			macs, err := wifiscan.Scan(wifiinterface)
 			errors(err, ERR_WIFI_SCAN, err_wifi_scan)
@@ -76,10 +78,10 @@ func Macs(cmd *cobra.Command, arg []string) {
 				count++
 				strmacs += mac.SSID + "\n"
 			}
-			scanningtime -= interval
+			now = sec.Unix()
+			now -= start
 			writeInFile(address+".txt", strmacs+"\n")
-			fmt.Printf("Scanned %v macs in %v:%v:%v. %v second left.\n",
-				len(macs), sec.Hour(), sec.Minute(), sec.Second(), scanningtime)
+			fmt.Printf("%v(sec)\t | \t%v(macs)\t | \t%v(sec)\n", now, len(macs), scanningtime-now)
 			strmacs = ""
 		}
 	}()
@@ -104,8 +106,8 @@ func parse_flags() {
 
 	rootCmd.Flags().StringVarP(&wifiinterface, "iface", "i", "", "set outgoing interface")
 	rootCmd.Flags().StringVarP(&address, "addr", "a", "", "set address")
-	rootCmd.Flags().IntVarP(&scanningtime, "time", "t", 30, "set scanning time")
-	rootCmd.Flags().IntVarP(&interval, "sleep", "s", 13, "set scanning interval")
+	rootCmd.Flags().Int64VarP(&scanningtime, "time", "t", 30, "set scanning time")
+	rootCmd.Flags().Int64VarP(&interval, "sleep", "s", 13, "set scanning interval")
 	rootCmd.MarkFlagRequired("addr")
 	err := rootCmd.Execute()
 	errors(err, ERR_PARSE_FLAGS, err_parse_flags)
