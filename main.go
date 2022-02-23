@@ -25,7 +25,7 @@ func errors(err error, caller func()) {
 }
 
 func err_chmod(args ...interface{}) {
-	log.Printf("Can't chmod %s. Sure you are sudo?\nErr: %s with code %v\n", args[0], args[1], args[2])
+	log.Printf("Can't chmod %s. Sure you run as sudo\nErr: %s with code %v\n", args[0], args[1], args[2])
 }
 
 func err_openfile(args ...interface{}) {
@@ -64,9 +64,11 @@ func writeInFile(filename string, data string) {
 
 /* Makes scanning within a minute and write macs in macs.txt for analizing */
 func Macs(cmd *cobra.Command, arg []string) {
-	var count int
-	var now int64
-	var strmacs, filename string
+	var (
+		count             int
+		now               int64
+		strmacs, filename string
+	)
 	filename = address + ".txt"
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 	start := time.Now().Unix()
