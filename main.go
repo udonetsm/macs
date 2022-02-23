@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
 	"github.com/schollz/wifiscan"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -18,79 +18,80 @@ const (
 	ERR_CHMOD       = 1004
 )
 
+func errors(err error, caller func()) {
+	if err != nil {
+		caller()
+	}
+}
+
+func err_chmod(args ...interface{}) {
+	log.Printf("Can't chmod %s. Sure you are sudo?\nErr: %s with code %v\n", args[0], args[1], args[2])
+}
+
+func err_openfile(args ...interface{}) {
+	log.Printf("Can't open %s\nErr: %s\n", args[0], args[1])
+	os.Exit(args[2].(int))
+}
+
+func err_writefile(args ...interface{}) {
+	log.Printf("Can't write in %s\nErr: %s\n", args[0], args[1])
+	os.Exit(args[2].(int))
+}
+
+func err_scanning(args ...interface{}) {
+	log.Printf("Can't scanning wifis\nErr: %s with code %v\n", args[0], args[1])
+}
+
+func err_parseflags(args ...interface{}) {
+	log.Printf("Can't parse flags\nErr: %s\n", args[0])
+	os.Exit(args[1].(int))
+}
+
 /* For parse flag */
 var (
 	wifiinterface, address string
 	scanningtime, interval int64
 )
 
-func errors(err error, code int, fn func(err error, code int, args ...interface{})) {
-	if err != nil {
-		fn(err, code)
-	}
-}
-
-func err_open_file(err error, code int, args ...interface{}) {
-	logrus.Error("Something wrong while open file\n", err, args)
-	os.Exit(code)
-}
-
-func err_write_file(err error, code int, args ...interface{}) {
-	logrus.Error("Something wrong while write file\n", err, args)
-	os.Exit(code)
-}
-
-func err_wifi_scan(err error, code int, args ...interface{}) {
-	logrus.Error("Something wrong while scanning wifi\n.", err, args)
-}
-
-func err_parse_flags(err error, code int, args ...interface{}) {
-	logrus.Error("Something wrong while parsing flags\n", err, args)
-	os.Exit(code)
-}
-
-func err_chmod(err error, code int, args ...interface{}) {
-	logrus.Error("Sumthing wrong while chmod\n", err, code, args)
-}
-
 /* Writting data in target file */
 func writeInFile(filename string, data string) {
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0777)
-	errors(err, ERR_OPEN_FILE, err_open_file)
+	errors(err, func() { err_openfile(filename, err, ERR_OPEN_FILE) })
 	defer file.Close()
 	_, err = file.WriteString(data)
-	errors(err, ERR_WRITE_FILE, err_write_file)
+	errors(err, func() { err_writefile(filename, err, ERR_WRITE_FILE) })
 }
 
 /* Makes scanning within a minute and write macs in macs.txt for analizing */
 func Macs(cmd *cobra.Command, arg []string) {
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	start := time.Now().Unix()
 	var count int
 	var now int64
-	var strmacs string
+	var strmacs, filename string
+	filename = address + ".txt"
+	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	start := time.Now().Unix()
 	go func() {
 		fmt.Printf("Passed\t | \tScanned\t | \tLeft\n")
 		for sec := range ticker.C {
 			macs, err := wifiscan.Scan(wifiinterface)
-			errors(err, ERR_WIFI_SCAN, err_wifi_scan)
+			errors(err, func() { err_scanning(err, ERR_WIFI_SCAN) })
 			for _, mac := range macs {
 				count++
 				strmacs += mac.SSID + "\n"
 			}
 			now = sec.Unix()
 			now -= start
-			writeInFile(address+".txt", strmacs+"\n")
+			writeInFile(filename, strmacs+"\n")
 			fmt.Printf("%v(sec)\t | \t%v(macs)\t | \t%v(sec)\n", now, len(macs), scanningtime-now)
 			strmacs = ""
 		}
 	}()
 	time.Sleep(time.Duration(scanningtime) * time.Second)
 	ticker.Stop()
-	fmt.Printf("Wrote %v strings in %s.txt\n", count, address)
+	fmt.Printf("Wrote %v strings in %s\n", count, filename)
 	err := os.Chmod(address+".txt", 0777)
-	errors(err, ERR_CHMOD, err_chmod)
-	wifiinterface, address = "", ""
+	errors(err, func() { err_chmod(filename, err, ERR_CHMOD) })
+	wifiinterface, address, filename = "", "", ""
 	count, scanningtime, interval = 0, 0, 0
 }
 
@@ -110,7 +111,7 @@ func parse_flags() {
 	rootCmd.Flags().Int64VarP(&interval, "sleep", "s", 13, "set scanning interval")
 	rootCmd.MarkFlagRequired("addr")
 	err := rootCmd.Execute()
-	errors(err, ERR_PARSE_FLAGS, err_parse_flags)
+	errors(err, func() { err_parseflags(err, ERR_PARSE_FLAGS) })
 }
 
 func main() {
