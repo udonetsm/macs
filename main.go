@@ -51,6 +51,7 @@ func err_parseflags(args ...interface{}) {
 var (
 	wifiinterface, address string
 	scanningtime, interval int64
+	count                  int
 )
 
 /* Writting data in target file */
@@ -62,39 +63,51 @@ func writeInFile(filename string, data string) {
 	errors(err, func() { err_writefile(filename, err, ERR_WRITE_FILE) })
 }
 
+func IfSigint(args ...interface{}) {
+	err := os.Chmod(args[0].(string), 0777)
+	errors(err, func() { err_chmod(args[0], err, ERR_CHMOD) })
+	log.Println("Changed mode for ", args[0])
+	os.Exit(0)
+}
+
+func IfNoInt() {
+	log.Println("No interrupt found")
+}
+
 /* Makes scanning within a minute and write macs in macs.txt for analizing */
-func Macs(cmd *cobra.Command, arg []string) {
-	var (
-		count             int
-		now               int64
-		strmacs, filename string
-	)
+func Do(cmd *cobra.Command, arg []string) {
+	//sigchan := make(chan os.Signal, 1)
+	var strmacs, filename string
 	filename = address + ".txt"
+	//go handlesignals.Capture_signals(syscall.SIGINT, sigchan, func() { IfSigint(filename) }, nil)
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	start := time.Now().Unix()
-	go func() {
-		fmt.Printf("Passed\t | \tScanned\t | \tLeft\n")
-		for sec := range ticker.C {
-			macs, err := wifiscan.Scan(wifiinterface)
-			errors(err, func() { err_scanning(err, ERR_WIFI_SCAN) })
-			for _, mac := range macs {
-				count++
-				strmacs += mac.SSID + "\n"
-			}
-			now = sec.Unix()
-			now -= start
-			writeInFile(filename, strmacs+"\n")
-			fmt.Printf("%v(sec)\t | \t%v(macs)\t | \t%v(sec)\n", now, len(macs), scanningtime-now)
-			strmacs = ""
-		}
-	}()
+	go scanning(ticker, strmacs, filename)
 	time.Sleep(time.Duration(scanningtime) * time.Second)
 	ticker.Stop()
-	fmt.Printf("Wrote %v strings in %s\n", count, filename)
+	fmt.Printf("\nWrote %v macs in %s\n", count, filename)
 	err := os.Chmod(address+".txt", 0777)
 	errors(err, func() { err_chmod(filename, err, ERR_CHMOD) })
 	wifiinterface, address, filename = "", "", ""
-	count, scanningtime, interval = 0, 0, 0
+	scanningtime, interval = 0, 0
+}
+
+func scanning(ticker *time.Ticker, strmacs, filename string) {
+	fmt.Printf("Passed\t | \tLeft\t | \t Last\t | \t Scanned\n")
+	start := time.Now().Unix()
+	for sec := range ticker.C {
+		macs, err := wifiscan.Scan(wifiinterface)
+		errors(err, func() { err_scanning(err, ERR_WIFI_SCAN) })
+		for _, mac := range macs {
+			count++
+			strmacs += mac.SSID + "\n"
+		}
+		now := sec.Unix()
+		now -= start
+		writeInFile(filename, strmacs+"\n")
+		out := fmt.Sprintf("\033[2K\r%v(sec)\t | %v(sec)\t | %v:%v:%v\t | %v(macs)", now, scanningtime-now, sec.Local().Hour(), sec.Local().Minute(), sec.Local().Second(), len(macs))
+		fmt.Print(out)
+		strmacs = ""
+	}
 }
 
 /* Get network interface name as flag and show help message if it's not exist */
@@ -104,7 +117,7 @@ func parse_flags() {
 		Version: "1.0",
 		Example: "This example will scan wifis within 120 seconds every 5 seconds and write scanned macs in Ленина_5-2.txt\n\n" +
 			"\t" + `sudo macs -a Ленина_5-2 -t 120 -s 5`,
-		Run: Macs,
+		Run: Do,
 	}
 
 	rootCmd.Flags().StringVarP(&wifiinterface, "iface", "i", "", "set outgoing interface")
