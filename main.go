@@ -116,7 +116,7 @@ func scanning(ticker *time.Ticker, strmacs, filename string) {
 	}
 }
 
-/* Get network interface name as flag and show help message if it's not exist */
+/* Get flag and show help message if it's not exist */
 func parse_flags() {
 	rootCmd := &cobra.Command{
 		Use:     "macs",
