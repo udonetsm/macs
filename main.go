@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"syscall"
 	"time"
 
 	"github.com/schollz/wifiscan"
 	"github.com/spf13/cobra"
+	"github.com/udonetsm/handlesignals"
 )
 
 const (
@@ -26,6 +28,7 @@ func errors(err error, caller func()) {
 
 func err_chmod(args ...interface{}) {
 	log.Printf("Can't chmod %s. Sure you run as sudo\nErr: %s with code %v\n", args[0], args[1], args[2])
+	os.Exit(0)
 }
 
 func err_openfile(args ...interface{}) {
@@ -66,23 +69,24 @@ func writeInFile(filename string, data string) {
 func IfSigint(args ...interface{}) {
 	err := os.Chmod(args[0].(string), 0777)
 	errors(err, func() { err_chmod(args[0], err, ERR_CHMOD) })
-	log.Println("Changed mode for ", args[0])
+	fmt.Println("\nChanged mode for ", args[0])
 	os.Exit(0)
 }
 
 func IfNoInt() {
-	log.Println("No interrupt found")
+	fmt.Print()
 }
 
 /* Makes scanning within a minute and write macs in macs.txt for analizing */
 func Do(cmd *cobra.Command, arg []string) {
-	//sigchan := make(chan os.Signal, 1)
+	sigchan := make(chan os.Signal)
 	var strmacs, filename string
 	filename = address + ".txt"
-	//go handlesignals.Capture_signals(syscall.SIGINT, sigchan, func() { IfSigint(filename) }, nil)
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	go handlesignals.Capture_signals(syscall.SIGINT, sigchan, func() { IfSigint(filename) }, IfNoInt)
 	go scanning(ticker, strmacs, filename)
 	time.Sleep(time.Duration(scanningtime) * time.Second)
+	go handlesignals.Capture_signals(syscall.SIGINT, sigchan, func() { IfSigint(filename) }, IfNoInt)
 	ticker.Stop()
 	fmt.Printf("\nWrote %v macs in %s\n", count, filename)
 	err := os.Chmod(address+".txt", 0777)
@@ -92,12 +96,14 @@ func Do(cmd *cobra.Command, arg []string) {
 }
 
 func scanning(ticker *time.Ticker, strmacs, filename string) {
+	sigchan := make(chan os.Signal)
 	fmt.Printf("Passed\t | \tLeft\t | \t Last\t | \t Scanned\n")
 	start := time.Now().Unix()
 	for sec := range ticker.C {
 		macs, err := wifiscan.Scan(wifiinterface)
 		errors(err, func() { err_scanning(err, ERR_WIFI_SCAN) })
 		for _, mac := range macs {
+			go handlesignals.Capture_signals(syscall.SIGINT, sigchan, func() { IfSigint(filename) }, IfNoInt)
 			count++
 			strmacs += mac.SSID + "\n"
 		}
