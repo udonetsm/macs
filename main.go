@@ -55,6 +55,7 @@ var (
 	wifiinterface, address string
 	scanningtime, interval int64
 	count                  int
+	fullLog                bool
 )
 
 /* Writting data in target file */
@@ -79,14 +80,11 @@ func IfNoInt() {
 
 /* Makes scanning within a minute and write macs in macs.txt for analizing */
 func Do(cmd *cobra.Command, arg []string) {
-	sigchan := make(chan os.Signal)
 	var strmacs, filename string
 	filename = address + ".txt"
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	go handlesignals.Capture_signals(syscall.SIGINT, sigchan, func() { IfSigint(filename) }, IfNoInt)
 	go scanning(ticker, strmacs, filename)
 	time.Sleep(time.Duration(scanningtime) * time.Second)
-	go handlesignals.Capture_signals(syscall.SIGINT, sigchan, func() { IfSigint(filename) }, IfNoInt)
 	ticker.Stop()
 	fmt.Printf("\nWrote %v macs in %s\n", count, filename)
 	err := os.Chmod(address+".txt", 0777)
@@ -110,8 +108,12 @@ func scanning(ticker *time.Ticker, strmacs, filename string) {
 		now := sec.Unix()
 		now -= start
 		writeInFile(filename, strmacs+"\n")
-		out := fmt.Sprintf("\033[2K\r%v(sec)\t | %v(sec)\t | %v:%v:%v\t | %v(macs)", now, scanningtime-now, sec.Local().Hour(), sec.Local().Minute(), sec.Local().Second(), len(macs))
-		fmt.Print(out)
+		out := fmt.Sprintf("%v(sec)\t | %v(sec)\t | %v:%v:%v\t | %v(macs)", now, scanningtime-now, sec.Local().Hour(), sec.Local().Minute(), sec.Local().Second(), len(macs))
+		if fullLog {
+			fmt.Print(out + "\n")
+		} else {
+			fmt.Print("\033[2K\r" + out)
+		}
 		strmacs = ""
 	}
 }
@@ -130,6 +132,7 @@ func parse_flags() {
 	rootCmd.Flags().StringVarP(&address, "addr", "a", "", "set address")
 	rootCmd.Flags().Int64VarP(&scanningtime, "time", "t", 30, "set scanning time")
 	rootCmd.Flags().Int64VarP(&interval, "sleep", "s", 13, "set scanning interval")
+	rootCmd.Flags().BoolVarP(&fullLog, "log", "l", false, "see full log")
 	rootCmd.MarkFlagRequired("addr")
 	err := rootCmd.Execute()
 	errors(err, func() { err_parseflags(err, ERR_PARSE_FLAGS) })
