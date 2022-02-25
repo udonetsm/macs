@@ -333,6 +333,8 @@ github.com/udonetsm/capturesig v0.0.0-20220215113453-b06b059c9b48 h1:z/NrZ5LSN+n
 github.com/udonetsm/capturesig v0.0.0-20220215113453-b06b059c9b48/go.mod h1:bPKAOSxJxT8aHPpKybJHfj641I/UPSsp7/CYgD5KUaY=
 github.com/udonetsm/handlesignals v0.0.0-20220223080801-b89593d0a3ff h1:Aevk681gzrmr4oio+ajponSlMyoFWxvhGxnlqSV2PRQ=
 github.com/udonetsm/handlesignals v0.0.0-20220223080801-b89593d0a3ff/go.mod h1:dU+OgdHvbSDbLGLVg3ojFc5mIFXghIy+T5BkgTWJTxw=
+github.com/udonetsm/handlesignals v0.0.0-20220225082255-f652db0d4eb4 h1:DE/6mOmt+iw+uc/pXthZ7GG3Pn2odHib1ezNHcRBbqQ=
+github.com/udonetsm/handlesignals v0.0.0-20220225082255-f652db0d4eb4/go.mod h1:dU+OgdHvbSDbLGLVg3ojFc5mIFXghIy+T5BkgTWJTxw=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

@@ -123,8 +123,9 @@ func parse_flags() {
 	rootCmd := &cobra.Command{
 		Use:     "macs",
 		Version: "1.0",
-		Example: "This example will scan wifis within 120 seconds every 5 seconds and write scanned macs in Ленина_5-2.txt\n\n" +
-			"\t" + `sudo macs -a Ленина_5-2 -t 120 -s 5`,
+		Example: `This example scan wifis within 120 seconds 
+		every 5 seconds, write scanned macs in Ленина_5-2.txt and show full log` + "\n\n" +
+			"\t" + `sudo macs -a Ленина_5-2 -t 120 -s 5 -l`,
 		Run: Do,
 	}
 
