@@ -28,7 +28,6 @@ func errors(err error, caller func()) {
 
 func err_chmod(args ...interface{}) {
 	log.Printf("Can't chmod %s. Sure you run as sudo\nErr: %s with code %v\n", args[0], args[1], args[2])
-	os.Exit(0)
 }
 
 func err_openfile(args ...interface{}) {
